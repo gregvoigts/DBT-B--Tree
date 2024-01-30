@@ -8,13 +8,13 @@ public class InnerNode extends Node {
     private Node[] children;
 
     public InnerNode(int capacity) {
-        this(new Integer[] {}, new Node[] {null}, capacity);
+        this(new Integer[] {}, new Node[] { null }, capacity);
     }
 
     public InnerNode(Integer[] keys, Node[] children, int capacity) {
         super(keys, capacity);
         assert keys.length == children.length - 1;
-        this.children = Arrays.copyOf(children, capacity + 1);
+        this.children = Arrays.copyOf(children, children.length);
     }
 
     public Node[] getChildren() {
@@ -22,7 +22,8 @@ public class InnerNode extends Node {
     }
 
     public void setChildren(Node[] children) {
-        this.children = Arrays.copyOf(children, this.children.length);
+        assert children.length == this.keys.length + 1;
+        this.children = Arrays.copyOf(children, children.length);
     }
 
     @Override
@@ -37,9 +38,9 @@ public class InnerNode extends Node {
 
     public String toString() {
         String keyList = Arrays.stream(keys).map(String::valueOf)
-                               .collect(Collectors.joining(", "));
+                .collect(Collectors.joining(", "));
         String childrenList = Arrays.stream(children).map(String::valueOf)
-                                    .collect(Collectors.joining(", "));
+                .collect(Collectors.joining(", "));
         return "keys: [" + keyList + "]; " + "children: [" + childrenList + "]";
     }
 

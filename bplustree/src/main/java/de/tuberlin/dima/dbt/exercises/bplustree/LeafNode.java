@@ -13,7 +13,7 @@ public class LeafNode extends Node {
     public LeafNode(Integer[] keys, String[] values, int capacity) {
         super(keys, capacity);
         assert keys.length == values.length;
-        this.values = Arrays.copyOf(values, capacity);
+        this.values = Arrays.copyOf(values, values.length);
     }
 
     public String[] getValues() {
@@ -21,7 +21,8 @@ public class LeafNode extends Node {
     }
 
     public void setValues(String[] values) {
-        this.values = Arrays.copyOf(values, this.values.length);
+        assert this.keys.length == values.length;
+        this.values = Arrays.copyOf(values, values.length);
     }
 
     @Override
