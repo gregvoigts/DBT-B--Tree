@@ -7,27 +7,22 @@ import java.util.LinkedList;
 /**
  * Implementation of a B+ tree.
  * <p>
- * The capacity of the tree is given by the capacity argument to the
- * constructor. Each node has at least {capacity/2} and at most {capacity} many
- * keys. The values are strings and are stored at the leaves of the tree.
+ * The capacity of the tree is given by the capacity argument to the constructor. Each node has at
+ * least {capacity/2} and at most {capacity} many keys. The values are strings and are stored at the
+ * leaves of the tree.
  * <p>
  * For each inner node, the following conditions hold:
  * <p>
- * {pre}
- * Integer[] keys = innerNode.getKeys();
- * Node[] children = innerNode.getChildren();
- * {pre}
+ * {pre} Integer[] keys = innerNode.getKeys(); Node[] children = innerNode.getChildren(); {pre}
  * <p>
- * - All keys in {children[i].getKeys()} are smaller than {keys[i]}.
- * - All keys in {children[j].getKeys()} are greater or equal than {keys[i]}
- * if j > i.
+ * - All keys in {children[i].getKeys()} are smaller than {keys[i]}. - All keys in
+ * {children[j].getKeys()} are greater or equal than {keys[i]} if j > i.
  */
 public class BPlusTree {
 
     ///// Implement these methods
 
-    private LeafNode findLeafNode(Integer key, Node node,
-            Deque<InnerNode> parents) {
+    private LeafNode findLeafNode(Integer key, Node node, Deque<InnerNode> parents) {
         if (node instanceof LeafNode) {
             return (LeafNode) node;
         } else {
@@ -105,8 +100,8 @@ public class BPlusTree {
         return result;
     }
 
-    private void insertIntoInnerNode(Integer key, Node child,
-            InnerNode node, Deque<InnerNode> parents) {
+    private void insertIntoInnerNode(Integer key, Node child, InnerNode node,
+            Deque<InnerNode> parents) {
         // Insert in Inner
         // Find the index where the element should be inserted
         int insertIndex = Arrays.binarySearch(node.keys, key);
@@ -131,8 +126,8 @@ public class BPlusTree {
         }
 
         // split inner node
-        Integer[] keySplitOne = new Integer[(int) Math.floor((newKeys.length - 1) * 0.5)];
-        Integer[] keySplitTwo = new Integer[(int) Math.ceil((newKeys.length - 1) * 0.5)];
+        Integer[] keySplitOne = new Integer[(int) Math.floor(newKeys.length * 0.5)];
+        Integer[] keySplitTwo = new Integer[(int) Math.floor(newKeys.length * 0.5)];
         Node[] valSplitOne = new Node[keySplitOne.length + 1];
         Node[] valSplitTwo = new Node[keySplitTwo.length + 1];
         int middleKey = newKeys[keySplitOne.length];
@@ -141,7 +136,7 @@ public class BPlusTree {
         System.arraycopy(newKeys, keySplitOne.length + 1, keySplitTwo, 0, keySplitTwo.length);
 
         System.arraycopy(newChildren, 0, valSplitOne, 0, valSplitOne.length);
-        System.arraycopy(newChildren, valSplitOne.length + 1, valSplitTwo, 0, valSplitTwo.length);
+        System.arraycopy(newChildren, valSplitOne.length, valSplitTwo, 0, valSplitTwo.length);
 
         node.setKeys(keySplitOne);
         node.setChildren(valSplitOne);
@@ -160,8 +155,8 @@ public class BPlusTree {
         }
     }
 
-    private void insertIntoLeafNode(Integer key, String value,
-            LeafNode node, Deque<InnerNode> parents) {
+    private void insertIntoLeafNode(Integer key, String value, LeafNode node,
+            Deque<InnerNode> parents) {
         // Done: insert value into leaf node (and propagate changes up)
         // Insert in leaf
         // Find the index where the element should be inserted
@@ -172,7 +167,7 @@ public class BPlusTree {
         if (insertIndex < 0) {
             insertIndex = -(insertIndex + 1);
         } else {
-            // Override value if key exsists
+            // Override value if key exists
             String[] values = node.getValues();
             values[insertIndex] = value;
             node.setValues(values);
@@ -217,37 +212,44 @@ public class BPlusTree {
 
     }
 
-    private void stealValue(LeafNode neighbour, LeafNode self, int stealPos, int insertIndex) {
-        Integer[] leftKeys = deleteArray(stealPos, neighbour.keys);
-        String[] leftValues = deleteArray(stealPos, neighbour.getValues());
-        String stealValue = neighbour.getValues()[stealPos];
-        int stealKey = neighbour.keys[stealPos];
+    private void stealValue(LeafNode neighbor, LeafNode self, int stealPos, int insertIndex) {
+        Integer[] leftKeys = deleteArray(stealPos, neighbor.keys);
+        String[] leftValues = deleteArray(stealPos, neighbor.getValues());
+        String stealValue = neighbor.getValues()[stealPos];
+        int stealKey = neighbor.keys[stealPos];
         Integer[] myKeys = insertArray(insertIndex, stealKey, self.keys);
         String[] myValues = insertArray(insertIndex, stealValue, self.getValues());
 
-        neighbour.setKeys(leftKeys);
-        neighbour.setValues(leftValues);
+        neighbor.setKeys(leftKeys);
+        neighbor.setValues(leftValues);
 
         self.setKeys(myKeys);
         self.setValues(myValues);
     }
 
-    private void merge(Node left, Node right, Deque<InnerNode> parents) {
+    private void mergeInner(InnerNode left, InnerNode right, Deque<InnerNode> parents) {
         InnerNode parent = parents.pop();
-        Object[] values = concatWithArrayCopy(left.getPayload(), right.getPayload());
-        Integer[] keys = concatWithArrayCopy(left.keys, right.keys);
+
+        // get key between left and right Node from parent
+        int childIndex = Arrays.binarySearch(parent.getChildren(), right);
+        int middleKey = parent.keys[childIndex - 1];
+
+        // Concatenate left and right children and keys with parent key in between
+        Integer[] keys = insertArray(left.keys.length, middleKey, left.keys);
+        Node[] values = concatWithArrayCopy(left.getChildren(), right.getChildren());
+        keys = concatWithArrayCopy(keys, right.keys);
+
         left.setKeys(keys);
         left.setPayload(values);
 
-        int childIndex = Arrays.binarySearch(parent.getChildren(), right);
-
+        // delete middle key and right child from parent
         parent.setKeys(deleteArray(childIndex - 1, parent.keys));
         parent.setChildren(deleteArray(childIndex, parent.getChildren()));
 
         // if left child not the first child
         // check for correct key
         if (childIndex > 1) {
-            parent.keys[childIndex - 2] = left.keys[0];
+            // parent.keys[childIndex - 2] = left.keys[0];
         }
 
         if (parent.keys.length >= capacity / 2) {
@@ -264,24 +266,86 @@ public class BPlusTree {
         }
 
         InnerNode parentParent = parents.peek();
-        int indexInParent = Arrays.binarySearch(parentParent.getChildren(), parent);
+        int indexInParentParent = Arrays.binarySearch(parentParent.getChildren(), parent);
 
         // try right
-        LeafNode rightNeighbour = (LeafNode) parent.getChildren()[indexInParent + 1];
-        if (rightNeighbour.keys.length == capacity / 2) {
-            merge(parent, rightNeighbour, parents);
+        if (indexInParentParent < parentParent.getChildren().length - 1) {
+            InnerNode rightNeighbor =
+                    (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
+            if (rightNeighbor.keys.length == capacity / 2) {
+                mergeInner(parent, rightNeighbor, parents);
+                return;
+            }
         }
 
         // try left
-        LeafNode leftNeighbour = (LeafNode) parent.getChildren()[indexInParent - 1];
-        if (leftNeighbour.keys.length == capacity / 2) {
-            merge(leftNeighbour, parent, parents);
+        if (indexInParentParent > 0) {
+            InnerNode leftNeighbor =
+                    (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
+            if (leftNeighbor.keys.length == capacity / 2) {
+                mergeInner(leftNeighbor, parent, parents);
+                return;
+            }
         }
     }
 
-    private String deleteFromLeafNode(Integer key, LeafNode node,
-            Deque<InnerNode> parents) {
-        // TODO: delete value from leaf node (and propagate changes up)
+    private void mergeLeaf(LeafNode left, LeafNode right, Deque<InnerNode> parents) {
+        InnerNode parent = parents.pop();
+        String[] values = concatWithArrayCopy(left.getValues(), right.getValues());
+        Integer[] keys = concatWithArrayCopy(left.keys, right.keys);
+        left.setKeys(keys);
+        left.setPayload(values);
+
+        int childIndex = Arrays.binarySearch(parent.getChildren(), right);
+
+        parent.setKeys(deleteArray(childIndex - 1, parent.keys));
+        parent.setChildren(deleteArray(childIndex, parent.getChildren()));
+
+        // if left child not the first child
+        // check for correct key
+        if (childIndex > 1) {
+            // parent.keys[childIndex - 2] = left.keys[0];
+        }
+
+        if (parent.keys.length >= capacity / 2) {
+            return;
+        }
+
+        // parent is Root: capacity constraint is irrelevant
+        if (parents.isEmpty()) {
+            if (parent.keys.length == 0) {
+                // When empty change left to root
+                root = left;
+            }
+            return;
+        }
+
+        InnerNode parentParent = parents.peek();
+        int indexInParentParent = Arrays.binarySearch(parentParent.getChildren(), parent);
+
+        // try right
+        if (indexInParentParent < parentParent.getChildren().length - 1) {
+            InnerNode rightNeighbor =
+                    (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
+            if (rightNeighbor.keys.length == capacity / 2) {
+                mergeInner(parent, rightNeighbor, parents);
+                return;
+            }
+        }
+
+        // try left
+        if (indexInParentParent > 0) {
+            InnerNode leftNeighbor =
+                    (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
+            if (leftNeighbor.keys.length == capacity / 2) {
+                mergeInner(leftNeighbor, parent, parents);
+                return;
+            }
+        }
+    }
+
+    private String deleteFromLeafNode(Integer key, LeafNode node, Deque<InnerNode> parents) {
+        // Done: delete value from leaf node (and propagate changes up)
 
         // Delete Key from Leaf
         int index = Arrays.binarySearch(node.keys, key);
@@ -317,12 +381,12 @@ public class BPlusTree {
         }
 
         // try left
-        LeafNode leftNeighbour = null;
+        LeafNode leftNeighbor = null;
         if (indexInParent > 0) {
-            leftNeighbour = (LeafNode) parent.getChildren()[indexInParent - 1];
+            leftNeighbor = (LeafNode) parent.getChildren()[indexInParent - 1];
 
-            if (leftNeighbour.keys.length > ((int) Math.ceil(capacity / 2))) {
-                stealValue(leftNeighbour, node, leftNeighbour.keys.length - 1, 0);
+            if (leftNeighbor.keys.length > ((int) Math.ceil(capacity / 2))) {
+                stealValue(leftNeighbor, node, leftNeighbor.keys.length - 1, 0);
 
                 // Adjust keys in parent
                 parent.keys[keyIndexInParent - 1] = node.keys[0];
@@ -331,25 +395,25 @@ public class BPlusTree {
         }
 
         // try right
-        LeafNode rightNeighbour = null;
+        LeafNode rightNeighbor = null;
         if (indexInParent < parent.getChildren().length - 1) {
-            rightNeighbour = (LeafNode) parent.getChildren()[indexInParent + 1];
+            rightNeighbor = (LeafNode) parent.getChildren()[indexInParent + 1];
 
-            if (rightNeighbour.keys.length > ((int) Math.ceil(capacity / 2))) {
-                stealValue(rightNeighbour, node, 0, node.keys.length);
+            if (rightNeighbor.keys.length > ((int) Math.ceil(capacity / 2))) {
+                stealValue(rightNeighbor, node, 0, node.keys.length);
                 // Adjust keys in parent
-                parent.keys[keyIndexInParent] = rightNeighbour.keys[0];
+                parent.keys[keyIndexInParent] = rightNeighbor.keys[0];
                 return deleted;
             }
         }
         // If not
         // two siblings with minimal and sub-minimal number of keys can be merged
-        if (rightNeighbour != null && rightNeighbour.keys.length == capacity / 2) {
-            merge(node, rightNeighbour, parents);
+        if (rightNeighbor != null && rightNeighbor.keys.length == capacity / 2) {
+            mergeLeaf(node, rightNeighbor, parents);
             return deleted;
         }
-        if (leftNeighbour != null && leftNeighbour.keys.length == capacity / 2) {
-            merge(leftNeighbour, node, parents);
+        if (leftNeighbor != null && leftNeighbor.keys.length == capacity / 2) {
+            mergeLeaf(leftNeighbor, node, parents);
             return deleted;
         }
 
