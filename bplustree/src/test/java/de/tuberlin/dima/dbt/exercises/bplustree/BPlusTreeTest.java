@@ -13,12 +13,22 @@ import static org.junit.Assert.assertThat;
 public class BPlusTreeTest {
 
         // fail each test after 1 second
-        // @Rule
-        // public Timeout globalTimeout = new Timeout(1000);
+        @Rule
+        public Timeout globalTimeout = new Timeout(1000);
 
         private BPlusTree tree, tree2, tree3;
 
         ///// Lookup tests
+
+        @Test
+        public void findKeyInEmptyLeaf() {
+                // given
+                tree = newTree(newLeaf(keys(), values()));
+                // when
+                String value = tree.lookup(2);
+                // then
+                assertThat(value, nullValue());
+        }
 
         @Test
         public void findKeyInLeaf() {
@@ -103,6 +113,16 @@ public class BPlusTreeTest {
         ///// Insertion tests
 
         @Test
+        public void insertInEmpty() {
+                // given
+                tree = newTree(newLeaf(keys(), values()));
+                // when
+                tree.insert(1, "a");
+                // then
+                assertThat(tree, isTree(newTree(newLeaf(keys(1), values("a")))));
+        }
+
+        @Test
         public void insertIntoLeaf() {
                 // given
                 tree = newTree(newLeaf(keys(1, 3), values("a", "c")));
@@ -142,14 +162,36 @@ public class BPlusTreeTest {
         ///// Deletion tests
 
         @Test
-        public void deleteFromRoot() {
+        public void deleteFromEmpty() {
                 // given
-                tree = newTree(newLeaf(keys(1, 2), values("a", "b")));
+                tree = newTree(newLeaf(keys(), values()));
+                // when
+                String value = tree.delete(1);
+                // then
+                assertThat(value, nullValue());
+                assertThat(tree, isTree(newTree(newLeaf(keys(), values()))));
+        }
+
+        @Test
+        public void deleteNotExisting() {
+                // given
+                tree = newTree(newLeaf(keys(1), values("a")));
                 // when
                 String value = tree.delete(2);
                 // then
-                assertThat(value, is("b"));
+                assertThat(value, nullValue());
                 assertThat(tree, isTree(newTree(newLeaf(keys(1), values("a")))));
+        }
+
+        @Test
+        public void deleteToEmptyRoot() {
+                // given
+                tree = newTree(newLeaf(keys(1), values("a")));
+                // when
+                String value = tree.delete(1);
+                // then
+                assertThat(value, is("a"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(), values()))));
         }
 
         @Test
@@ -1175,6 +1217,157 @@ public class BPlusTreeTest {
                                                                                 "test_new"))))))))
 
                 )));
+
+        }
+
+        @Test
+        public void deleteInRoot() {
+
+                tree = newTree(newLeaf(keys(1, 2), values("a", "b")));
+                // when
+                String value = tree.delete(2);
+                // then
+                assertThat(value, is("b"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1), values("a")))));
+
+                value = tree.lookup(1);
+                assertThat(value, is("a"));
+        }
+
+        @Test
+        public void combiTestMergeAndDeleteInRootEmptyRoot() {
+                // given
+                tree = newTree(newNode(keys(3),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4), values("c", "d")))));
+                // when
+                String value = tree.delete(2);
+                // then
+                assertThat(value, is("b"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1, 3, 4), values("a", "c", "d")))));
+
+                // Delete further in parent Node
+                value = tree.delete(3);
+                // then
+                assertThat(value, is("c"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1, 4), values("a", "d")))));
+
+                value = tree.lookup(1);
+                assertThat(value, is("a"));
+
+                value = tree.delete(4);
+
+                assertThat(value, is("d"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1), values("a")))));
+
+                // Delete last Element in root -> empty root
+                value = tree.delete(1);
+                assertThat(value, is("a"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(), values()))));
+
+                // Insert first element in empty root
+                tree.insert(1, "first Element");
+                assertThat(tree, isTree(newTree(newLeaf(keys(1), values("first Element")))));
+        }
+
+        @Test
+        public void insertTests() {
+                tree = newTree(newLeaf(keys(1, 2), values("a", "b")));
+                tree.insert(3, "test");
+                tree.insert(4, "test");
+                tree.insert(5, "test");
+                assertThat(tree, isTree(newTree(newNode(keys(3),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4, 5), values("test", "test", "test")))))));
+                tree.insert(6, "test");
+                tree.insert(7, "test");
+
+                assertThat(tree, isTree(newTree(newNode(keys(3, 5),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4), values("test", "test")),
+                                                newLeaf(keys(5, 6, 7), values("test", "test", "test")))))));
+
+                tree.insert(8, "test");
+                tree.insert(9, "test");
+                assertThat(tree, isTree(newTree(newNode(keys(3, 5, 7),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4), values("test", "test")),
+                                                newLeaf(keys(5, 6), values("test", "test")),
+                                                newLeaf(keys(7, 8, 9), values("test", "test", "test")))))));
+                tree.insert(10, "test");
+                tree.insert(11, "test");
+                tree.insert(12, "test");
+                assertThat(tree, isTree(newTree(newNode(keys(3, 5, 7, 9),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4), values("test", "test")),
+                                                newLeaf(keys(5, 6), values("test", "test")),
+                                                newLeaf(keys(7, 8), values("test", "test")),
+                                                newLeaf(keys(9, 10, 11, 12),
+                                                                values("test", "test", "test", "test")))))));
+                tree.insert(13, "test");
+                assertThat(tree, isTree(newTree(
+                                newNode(keys(7), nodes(
+                                                newNode(keys(3, 5), nodes(
+                                                                newLeaf(keys(1, 2), values("a", "b")),
+                                                                newLeaf(keys(3, 4), values("test", "test")),
+                                                                newLeaf(keys(5, 6), values("test", "test")))),
+                                                newNode(keys(9, 11), nodes(
+                                                                newLeaf(keys(7, 8), values("test", "test")),
+                                                                newLeaf(keys(9, 10), values("test", "test")),
+                                                                newLeaf(keys(11, 12, 13),
+                                                                                values("test", "test", "test")))))))));
+        }
+
+        @Test
+        public void MergeIntoRoot() {
+                // merge right and collaps into root node
+                tree = newTree(newNode(keys(4),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(4, 5), values("test", "test")))));
+                String value = tree.delete(4);
+                assertThat(value, is("test"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1, 2, 5), values("a", "b", "test")))));
+
+                // Some more test after collapsing into root
+
+                // Delete one more value in root
+                value = tree.delete(1);
+                assertThat(value, is("a"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(2, 5), values("b", "test")))));
+
+                // merge right
+                tree = newTree(newNode(keys(4),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(4, 5), values("test", "test")))));
+                value = tree.delete(1);
+                assertThat(value, is("a"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(2, 4, 5), values("b", "test", "test")))));
+
+                // merge left
+                tree = newTree(newNode(keys(3),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(4, 5), values("test", "test")))));
+                value = tree.delete(2);
+                assertThat(value, is("b"));
+                assertThat(tree, isTree(newTree(newLeaf(keys(1, 4, 5), values("a", "test", "test")))));
+
+                // Insert right from index
+                tree = newTree(newNode(keys(3),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(4, 5), values("test", "test")))));
+                tree.insert(3, "test");
+                assertThat(tree, isTree(newTree(newNode(keys(3),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(3, 4, 5), values("test", "test", "test")))))));
+
+                // Insert left from index
+                tree = newTree(newNode(keys(4),
+                                nodes(newLeaf(keys(1, 2), values("a", "b")),
+                                                newLeaf(keys(4, 5), values("test", "test")))));
+                tree.insert(3, "test");
+                assertThat(tree, isTree(newTree(newNode(keys(4),
+                                nodes(newLeaf(keys(1, 2, 3), values("a", "b", "test")),
+                                                newLeaf(keys(4, 5), values("test", "test")))))));
 
         }
 

@@ -7,15 +7,19 @@ import java.util.LinkedList;
 /**
  * Implementation of a B+ tree.
  * <p>
- * The capacity of the tree is given by the capacity argument to the constructor. Each node has at
- * least {capacity/2} and at most {capacity} many keys. The values are strings and are stored at the
+ * The capacity of the tree is given by the capacity argument to the
+ * constructor. Each node has at
+ * least {capacity/2} and at most {capacity} many keys. The values are strings
+ * and are stored at the
  * leaves of the tree.
  * <p>
  * For each inner node, the following conditions hold:
  * <p>
- * {pre} Integer[] keys = innerNode.getKeys(); Node[] children = innerNode.getChildren(); {pre}
+ * {pre} Integer[] keys = innerNode.getKeys(); Node[] children =
+ * innerNode.getChildren(); {pre}
  * <p>
- * - All keys in {children[i].getKeys()} are smaller than {keys[i]}. - All keys in
+ * - All keys in {children[i].getKeys()} are smaller than {keys[i]}. - All keys
+ * in
  * {children[j].getKeys()} are greater or equal than {keys[i]} if j > i.
  */
 public class BPlusTree {
@@ -270,8 +274,7 @@ public class BPlusTree {
 
         // try right
         if (indexInParentParent < parentParent.getChildren().length - 1) {
-            InnerNode rightNeighbor =
-                    (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
+            InnerNode rightNeighbor = (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
             if (rightNeighbor.keys.length == capacity / 2) {
                 mergeInner(parent, rightNeighbor, parents);
                 return;
@@ -280,8 +283,7 @@ public class BPlusTree {
 
         // try left
         if (indexInParentParent > 0) {
-            InnerNode leftNeighbor =
-                    (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
+            InnerNode leftNeighbor = (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
             if (leftNeighbor.keys.length == capacity / 2) {
                 mergeInner(leftNeighbor, parent, parents);
                 return;
@@ -325,8 +327,7 @@ public class BPlusTree {
 
         // try right
         if (indexInParentParent < parentParent.getChildren().length - 1) {
-            InnerNode rightNeighbor =
-                    (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
+            InnerNode rightNeighbor = (InnerNode) parentParent.getChildren()[indexInParentParent + 1];
             if (rightNeighbor.keys.length == capacity / 2) {
                 mergeInner(parent, rightNeighbor, parents);
                 return;
@@ -335,8 +336,7 @@ public class BPlusTree {
 
         // try left
         if (indexInParentParent > 0) {
-            InnerNode leftNeighbor =
-                    (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
+            InnerNode leftNeighbor = (InnerNode) parentParent.getChildren()[indexInParentParent - 1];
             if (leftNeighbor.keys.length == capacity / 2) {
                 mergeInner(leftNeighbor, parent, parents);
                 return;
@@ -349,6 +349,9 @@ public class BPlusTree {
 
         // Delete Key from Leaf
         int index = Arrays.binarySearch(node.keys, key);
+        if (index < 0) {
+            return null;
+        }
         String[] values = deleteArray(index, node.getValues());
         Integer[] keys = deleteArray(index, node.keys);
 
@@ -430,7 +433,12 @@ public class BPlusTree {
      */
     public String lookup(Integer key) {
         LeafNode leafNode = findLeafNode(key, root);
-        return lookupInLeafNode(key, leafNode);
+        try {
+            return lookupInLeafNode(key, leafNode);
+        } catch (Exception e) {
+            return null;
+        }
+
     }
 
     /**
@@ -439,7 +447,12 @@ public class BPlusTree {
     public void insert(int key, String value) {
         Deque<InnerNode> parents = new LinkedList<>();
         LeafNode leafNode = findLeafNode(key, root, parents);
-        insertIntoLeafNode(key, value, leafNode, parents);
+        try {
+            insertIntoLeafNode(key, value, leafNode, parents);
+        } catch (Exception e) {
+
+        }
+
     }
 
     /**
@@ -450,7 +463,12 @@ public class BPlusTree {
     public String delete(Integer key) {
         Deque<InnerNode> parents = new LinkedList<>();
         LeafNode leafNode = findLeafNode(key, root, parents);
-        return deleteFromLeafNode(key, leafNode, parents);
+        try {
+            return deleteFromLeafNode(key, leafNode, parents);
+        } catch (Exception e) {
+            return null;
+        }
+
     }
 
     ///// Leave these methods unchanged
